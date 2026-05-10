@@ -51,7 +51,12 @@ func GetConfig() *Config {
 }
 
 func SetupFolders() {
-	err := os.MkdirAll("media", 0755)
+	err := os.RemoveAll("media")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = os.MkdirAll("media", 0755)
 	if err != nil {
 		log.Fatal(err)
 	}
