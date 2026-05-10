@@ -1,5 +1,5 @@
 services:
-  furrfree-telegram-bot:
+  lamina:
     container_name: lamina
     image: ghcr.io/tekofx/lamina:latest
     env_file: .env
