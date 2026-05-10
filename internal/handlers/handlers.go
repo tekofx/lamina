@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -28,28 +29,30 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 
 		if len(update.Message.Photo) > 0 {
 			logger.Log("Photo")
+			fileID := update.Message.Photo[len(update.Message.Photo)-1].FileID // Highest quality photo
+			err := DownloadFile(fileID, "photo.jpg", update.Context(), bot)
+
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		if update.Message.Document != nil {
 			logger.Log("Document")
+			err := DownloadFile(update.Message.Document.FileID, update.Message.Document.FileName, update.Context(), bot)
+
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		if update.Message.Sticker != nil {
 			logger.Log("Sticker")
-			fileID := update.Message.Sticker.FileID
-			file, err := bot.GetFile(update.Context(), &telego.GetFileParams{FileID: fileID})
-			if err != nil {
-				log.Fatal(err)
-			}
-
 			if update.Message.Sticker.IsAnimated || update.Message.Sticker.IsVideo {
 				logger.Error("Must be still sticker")
 			}
 
-			fileUrl := bot.FileDownloadURL(file.FilePath)
-			logger.Log(file.FileID)
-
-			err = DownloadFile("sticker.webp", fileUrl)
+			err := DownloadFile(update.Message.Sticker.FileID, "sticker.webp", update.Context(), bot)
 
 			if err != nil {
 				log.Fatal(err)
@@ -60,9 +63,17 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 	}, th.AnyMessage())
 }
 
-func DownloadFile(filepath string, url string) error {
+func DownloadFile(fileID string, filepath string, ctx context.Context, bot *telego.Bot) error {
+
+	file, err := bot.GetFile(ctx, &telego.GetFileParams{FileID: fileID})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fileUrl := bot.FileDownloadURL(file.FilePath)
+
 	// Get the response from the URL
-	resp, err := http.Get(url)
+	resp, err := http.Get(fileUrl)
 	if err != nil {
 		return err
 	}
@@ -78,4 +89,5 @@ func DownloadFile(filepath string, url string) error {
 	// Write the response body to the file
 	_, err = io.Copy(out, resp.Body)
 	return err
+
 }
