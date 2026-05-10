@@ -27,8 +27,13 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 		if len(update.Message.Photo) > 0 {
 			logger.Log("Photo")
 			fileID := update.Message.Photo[len(update.Message.Photo)-1].FileID // Highest quality photo
-			err := utils.DownloadFile(fileID, "photo.jpg", update.Context(), bot)
 
+			err := utils.DownloadFile(fileID, "photo.jpg", update.Context(), bot)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = utils.ConvertToSticker("photo.jpg")
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -36,8 +41,13 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 
 		if update.Message.Document != nil {
 			logger.Log("Document")
-			err := utils.DownloadFile(update.Message.Document.FileID, update.Message.Document.FileName, update.Context(), bot)
 
+			err := utils.DownloadFile(update.Message.Document.FileID, update.Message.Document.FileName, update.Context(), bot)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = utils.ConvertToSticker(update.Message.Document.FileName)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -51,6 +61,11 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 
 			err := utils.DownloadFile(update.Message.Sticker.FileID, "sticker.webp", update.Context(), bot)
 
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = utils.ConvertToImage("sticker.webp")
 			if err != nil {
 				log.Fatal(err)
 			}
