@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
+	"github.com/tekofx/lamina/internal/logger"
 )
 
 type Config struct {
