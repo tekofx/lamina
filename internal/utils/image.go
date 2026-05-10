@@ -1,34 +1,28 @@
 package utils
 
 import (
+	"fmt"
+
+	"github.com/google/uuid"
 	"github.com/sunshineplan/imgconv"
+	"github.com/tekofx/lamina/internal/config"
 )
 
-func ConvertToSticker(filepath string) error {
+func ConvertToImage(filepath string) (*string, error) {
 	src, err := imgconv.Open(filepath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	resized := imgconv.Resize(src, &imgconv.ResizeOption{Width: 512})
+	filename := fmt.Sprintf("%s/%s.png", config.Conf.MediaFolder, uuid.NewString())
 
-	if err := imgconv.Save("sticker.webp", resized, &imgconv.FormatOption{Format: imgconv.WEBP}); err != nil {
-		return err
+	if err := imgconv.Save(
+		filename,
+		src,
+		&imgconv.FormatOption{Format: imgconv.PNG}); err != nil {
+		return nil, err
 	}
 
-	return nil
-}
-
-func ConvertToImage(filepath string) error {
-	src, err := imgconv.Open(filepath)
-	if err != nil {
-		return err
-	}
-
-	if err := imgconv.Save("sticker.png", src, &imgconv.FormatOption{Format: imgconv.PNG}); err != nil {
-		return err
-	}
-
-	return nil
+	return &filename, nil
 
 }

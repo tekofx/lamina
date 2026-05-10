@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"log"
+	"os"
 
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
+	tu "github.com/mymmrac/telego/telegoutil"
 	"github.com/tekofx/lamina/internal/logger"
 	"github.com/tekofx/lamina/internal/utils"
 )
@@ -14,61 +16,63 @@ func AddHandlers(bh *th.BotHandler, bot *telego.Bot) {
 
 }
 
-// func newStickerMessage(bh *th.BotHandler, bot *telego.Bot) {
-// 	bh.Handle(func(ctx *th.Context, update telego.Update) error {
-// 		logger.Log(fmt.Sprintf("Admission: Left member %s", update.Message.LeftChatMember.Username))
-// 		return nil
-// 	}, th.AnyMessage())
-// }
-
 func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 	bh.Handle(func(ctx *th.Context, update telego.Update) error {
 
+		var fileID string
+		var fileExtension string
+
 		if len(update.Message.Photo) > 0 {
-			logger.Log("Photo")
-			fileID := update.Message.Photo[len(update.Message.Photo)-1].FileID // Highest quality photo
-
-			err := utils.DownloadFile(fileID, "photo.jpg", update.Context(), bot)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			err = utils.ConvertToSticker("photo.jpg")
-			if err != nil {
-				log.Fatal(err)
-			}
+			fileID = update.Message.Photo[len(update.Message.Photo)-1].FileID // Highest quality photo
+			fileExtension = "jpg"
 		}
 
 		if update.Message.Document != nil {
-			logger.Log("Document")
-
-			err := utils.DownloadFile(update.Message.Document.FileID, update.Message.Document.FileName, update.Context(), bot)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			err = utils.ConvertToSticker(update.Message.Document.FileName)
-			if err != nil {
-				log.Fatal(err)
-			}
+			fileID = update.Message.Document.FileID
+			fileExtension = "png"
 		}
 
 		if update.Message.Sticker != nil {
-			logger.Log("Sticker")
 			if update.Message.Sticker.IsAnimated || update.Message.Sticker.IsVideo {
 				logger.Error("Must be still sticker")
 			}
+			fileID = update.Message.Sticker.FileID
+			fileExtension = "webp"
+		}
 
-			err := utils.DownloadFile(update.Message.Sticker.FileID, "sticker.webp", update.Context(), bot)
+		bot.SendMessage(update.Context(), &telego.SendMessageParams{
+			ChatID: update.Message.Chat.ChatID(),
+			Text:   "Converting image...",
+		})
+		logger.Log("test")
 
-			if err != nil {
-				log.Fatal(err)
-			}
+		downloadedImageFileName, err := utils.DownloadFile(fileID, fileExtension, update.Context(), bot)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-			err = utils.ConvertToImage("sticker.webp")
-			if err != nil {
-				log.Fatal(err)
-			}
+		convertedImageFilename, err := utils.ConvertToImage(*downloadedImageFileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		file, _ := os.Open(*convertedImageFilename)
+		defer file.Close()
+
+		params := tu.Document(tu.ID(update.Message.Chat.ID), tu.File(file))
+		_, err = bot.SendDocument(ctx, params)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = os.Remove(*downloadedImageFileName)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = os.Remove(*convertedImageFilename)
+		if err != nil {
+			log.Fatal(err)
 		}
 
 		return nil
