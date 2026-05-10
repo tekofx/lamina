@@ -1,8 +1,8 @@
 package config
 
 import (
+	"log"
 	"os"
-	"strconv"
 	"sync"
 
 	"github.com/joho/godotenv"
@@ -10,7 +10,8 @@ import (
 )
 
 type Config struct {
-	Token string
+	Token       string
+	MediaFolder string
 }
 
 var lock = &sync.Mutex{}
@@ -25,20 +26,6 @@ func InitializeConfig() {
 			Conf = GetConfig()
 		}
 	}
-}
-
-func getIntEnvVariable(name string) int {
-	envVar := os.Getenv(name)
-	if envVar == "" {
-		logger.Fatal("Env variable %s required", name)
-	}
-
-	intValue, err := strconv.Atoi(envVar)
-	if err != nil {
-		logger.Fatal("Env variable %s must be integer", name)
-	}
-
-	return intValue
 }
 
 func getStringEnvVariable(name string) string {
@@ -57,7 +44,15 @@ func GetConfig() *Config {
 	}
 
 	return &Config{
-		Token: getStringEnvVariable("TOKEN"),
+		Token:       getStringEnvVariable("TOKEN"),
+		MediaFolder: "media",
 	}
 
+}
+
+func SetupFolders() {
+	err := os.MkdirAll("media", 0755)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

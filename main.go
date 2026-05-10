@@ -13,6 +13,7 @@ import (
 func main() {
 
 	config.InitializeConfig()
+	config.SetupFolders()
 
 	bot, botErr := telego.NewBot(config.Conf.Token)
 
