@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/mymmrac/telego"
@@ -29,12 +29,15 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 
 		if update.Message.Document != nil {
 			fileID = update.Message.Document.FileID
+			fmt.Println(update.Message.Document.MimeType)
+
 			fileExtension = "png"
 		}
 
 		if update.Message.Sticker != nil {
 			if update.Message.Sticker.IsAnimated || update.Message.Sticker.IsVideo {
 				logger.Error("Must be still sticker")
+				return nil
 			}
 			fileID = update.Message.Sticker.FileID
 			fileExtension = "webp"
@@ -44,35 +47,45 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 			ChatID: update.Message.Chat.ChatID(),
 			Text:   "Converting image...",
 		})
-		logger.Log("test")
 
 		downloadedImageFileName, err := utils.DownloadFile(fileID, fileExtension, update.Context(), bot)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log(err)
+			bot.SendMessage(update.Context(), &telego.SendMessageParams{
+				ChatID: update.Message.Chat.ChatID(),
+				Text:   "Error downloading image. Check the image is not larger than 20 mb",
+			})
+			return nil
 		}
 
 		convertedImageFilename, err := utils.ConvertToImage(*downloadedImageFileName)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log(err)
+			return nil
 		}
 
 		file, _ := os.Open(*convertedImageFilename)
 		defer file.Close()
 
+		logger.Log("Sending image")
 		params := tu.Document(tu.ID(update.Message.Chat.ID), tu.File(file))
 		_, err = bot.SendDocument(ctx, params)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log(err)
+			return nil
 		}
+		logger.Log("Image sent")
 
 		err = os.Remove(*downloadedImageFileName)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log(err)
+			return nil
 		}
 
 		err = os.Remove(*convertedImageFilename)
 		if err != nil {
-			log.Fatal(err)
+			logger.Log(err)
+			return nil
 		}
 
 		return nil
