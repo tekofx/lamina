@@ -89,5 +89,5 @@ func newMessage(bh *th.BotHandler, bot *telego.Bot) {
 		}
 
 		return nil
-	}, th.AnyMessage())
+	}, th.AnyMessageWithMedia())
 }
