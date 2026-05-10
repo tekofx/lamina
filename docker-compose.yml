@@ -1,0 +1,6 @@
+services:
+  furrfree-telegram-bot:
+    container_name: lamina
+    image: ghcr.io/tekofx/lamina:latest
+    env_file: .env
+    restart: unless-stopped
